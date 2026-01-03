@@ -1,0 +1,35 @@
+data:
+  raw_path: "data/raw/defects.csv"
+  processed_path: "data/processed/"
+  train_data: "data/processed/train.csv"
+  test_data: "data/processed/test.csv"
+  test_size: 0.2
+  val_size: 0.1
+  random_state: 42
+  target_col: "defects"
+
+preprocessing:
+  numeric_features:
+    - "loc"
+    - "v(g)"
+    - "ev(g)"
+    - "iv(g)"
+    - "n"
+    - "v"
+    - "l"
+    - "d"
+    - "i"
+    - "e"
+    - "b"
+    - "t"
+    - "lOCode"
+    - "lOComment"
+    - "lOBlank"
+    - "locCodeAndComment"
+    - "uniq_Op"
+    - "uniq_Opnd"
+    - "total_Op"
+    - "total_Opnd"
+    - "branchCount"
+  categorical_features: []
+  scaler: "standard"

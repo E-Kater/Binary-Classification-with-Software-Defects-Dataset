@@ -1,0 +1,10 @@
+model:
+  name: "DefectClassifier"
+  model_path: "models/best_model-v6.ckpt"
+  scaler_path: "data/processed/scaler.joblib"
+  input_size: 21
+  hidden_sizes: [64, 32, 16]
+  dropout_rate: 0.2
+  learning_rate: 0.0005
+  batch_size: 16
+  num_classes: 2

@@ -1,0 +1,24 @@
+# dvc.yaml
+stages:
+  prepare:
+    cmd: python scripts/data_preprocessing.py
+    deps:
+      - data/raw/defects.csv
+      - scripts/data_preprocessing.py
+    outs:
+      - data/processed/train.csv
+      - data/processed/test.csv
+      - data/processed/scaler.joblib
+
+  train:
+    cmd: python src/pipelines/train_pipeline.py
+    deps:
+      - data/processed/train.csv
+      - data/processed/test.csv
+    params:
+      - configs/config.yaml
+    outs:
+      - models/best_model-v6.ckpt
+    metrics:
+      - metrics.json:
+          cache: false

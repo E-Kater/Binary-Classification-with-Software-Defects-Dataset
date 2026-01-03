@@ -1,0 +1,4 @@
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = /Users/ekaterina/mnt/mygdrive/path/to/dvc/store

@@ -1,0 +1,11 @@
+training:
+  max_epochs: 50
+  patience: 10
+  monitor: "val_f1"
+  mode: "max"
+  accelerator: "cpu"
+  devices: 1
+
+mlflow:
+  tracking_uri: "mlruns"
+  experiment_name: "software_defects"

@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Poetry
+      run: pip install poetry
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Lint
+      run: make lint
+
+    - name: Test
+      run: make test
+
+  train:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Train model
+      run: |
+        mkdir -p data/raw
+        # Загрузка данных (заменить на реальный источник)
+        # wget -O data/raw/defects.csv https://example.com/data.csv
+        make train
+
+    - name: Upload model artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: model
+        path: models/

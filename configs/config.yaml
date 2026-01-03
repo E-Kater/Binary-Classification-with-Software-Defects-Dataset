@@ -1,0 +1,8 @@
+defaults:
+  - data_config
+  - model_config
+  - training_config
+
+project_name: "software_defect_prediction"
+experiment_name: "baseline_experiment"
+seed: 42
