@@ -511,7 +511,6 @@ Key metrics tracked:
 4. **Memory Issues**: Reduce `batch_size` in config
 5. **Missing DVC remote**: Configure in .dvc/config
 6. **Kaggle API error**: Set up ~/.kaggle/kaggle.json
-7. **CUDA issues**: Set accelerator: cpu in config
 
 ### Debug Commands
 
