@@ -3,20 +3,19 @@ import os
 import sys
 from typing import List
 
+import numpy as np
+import onnxruntime as ort
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from omegaconf import OmegaConf
 from pydantic import BaseModel, Field
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.append(project_root)
+sys.path.append(os.path.join(project_root, "software_defect_prediction"))
 
-
-try:
-    from src.inference.predictor import DefectPredictor
-except ImportError:
-    sys.path.append(os.path.join(project_root, "software_defect_prediction"))
-    from inference.predictor import DefectPredictor
+from inference.predictor import DefectPredictor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,9 +26,13 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Загрузка модели и предиктора
-MODEL_PATH = "models/best_model-v6.ckpt"
-SCALER_PATH = "data/processed/scaler.joblib"
+config_path: str = "configs/model_config.yaml"
+config = OmegaConf.load(config_path)
+model_path = config.model.model_path
+session = ort.InferenceSession(str(config.model.onnx_model_path))
+input_name = session.get_inputs()[0].name
+output_name = session.get_outputs()[0].name
+scaler_path = config.model.scaler_path
 
 predictor = None
 
@@ -94,6 +97,14 @@ class BatchInput(BaseModel):
     samples: List[FeatureInput]
 
 
+class PredictionResponse(BaseModel):
+    """Ответ с предсказанием"""
+
+    model_name: str = "defect_classifier"
+    model_version: str = "1"
+    outputs: List[List[float]]
+
+
 class PredictionResult(BaseModel):
     """Модель результата предсказания"""
 
@@ -103,21 +114,51 @@ class PredictionResult(BaseModel):
     confidences: list[float]
 
 
+class PredictionRequest(BaseModel):
+    """Запрос на предсказание"""
+
+    inputs: List[List[float]] = [
+        [
+            22.0,
+            3.0,
+            1.0,
+            2.0,
+            60.0,
+            278.63,
+            0.06,
+            19.56,
+            14.25,
+            5448.79,
+            0.09,
+            302.71,
+            17,
+            1,
+            1,
+            0,
+            16.0,
+            9.0,
+            38.0,
+            22.0,
+            5.0,
+        ]
+    ]
+
+
 @app.on_event("startup")
 async def startup_event():
     """Загрузка модели при запуске приложения"""
     global predictor
 
     try:
-        if not os.path.exists(MODEL_PATH):
-            logger.error(f"Модель не найдена: {MODEL_PATH}")
+        if not os.path.exists(model_path):
+            logger.error(f"Модель не найдена: {model_path}")
             return
 
         # Инициализируем предиктор
-        predictor = DefectPredictor(MODEL_PATH)
+        predictor = DefectPredictor(model_path)
 
-        if os.path.exists(SCALER_PATH):
-            predictor.load_scaler(SCALER_PATH)
+        if os.path.exists(scaler_path):
+            predictor.load_scaler(scaler_path)
 
         logger.info("Модель успешно загружена")
 
@@ -135,7 +176,9 @@ async def root():
             "health": "/health",
             "predict_single": "/predict",
             "predict_batch": "/predict/batch",
+            "predict_onnx": "/onnx/predict",
             "metrics": "/metrics",
+            "model_info": "/model_info",
         },
     }
 
@@ -194,6 +237,34 @@ async def predict_batch(batch_input: BatchInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/onnx/predict", response_model=PredictionResponse)
+async def predict_onnx(request: PredictionRequest):
+    try:
+        # Преобразуем входные данные
+        input_data = np.array(request.inputs, dtype=np.float32)
+
+        # Выполняем предсказание
+        outputs = session.run([output_name], {input_name: input_data})[0]
+
+        return PredictionResponse(outputs=outputs.tolist())
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/model_info")
+async def model_info():
+    """Информация о загруженной модели"""
+    return {
+        "model_path": str(model_path),
+        "input_name": config.model.name,
+        "input_size": config.model.input_size,
+        "dropout_rate": config.model.dropout_rate,
+        "learning_rate": config.model.learning_rate,
+        "batch_size": config.model.batch_size,
+    }
+
+
 @app.get("/metrics")
 async def get_metrics():
     """Получение метрик модели на тестовых данных"""
@@ -209,7 +280,7 @@ async def get_metrics():
 
         return {
             "test_metrics": metrics,
-            "model_info": {"path": MODEL_PATH, "device": str(predictor.device)},
+            "model_info": {"path": model_path, "device": str(predictor.device)},
         }
 
     except Exception as e:

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  triton-server:
+    image: nvcr.io/nvidia/tritonserver:23.10-py3
+    container_name: defect-classifier-triton
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./defect_classifier:/models/defect_classifier
+    command: >
+      tritonserver
+      --model-repository=/models
+      --log-verbose=1
+      --http-port=8000
+      --grpc-port=8001
+      --metrics-port=8002
+    restart: unless-stopped

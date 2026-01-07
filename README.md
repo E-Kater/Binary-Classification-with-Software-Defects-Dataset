@@ -4,7 +4,6 @@
 [![Poetry](https://img.shields.io/badge/poetry-managed-cyan.svg)](https://python-poetry.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![MLflow](https://img.shields.io/badge/MLflow-2.4+-orange.svg)](https://mlflow.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 A comprehensive MLOps project for predicting software defects using machine learning. This project implements a complete ML lifecycle with industry-standard tools and practices.
@@ -22,11 +21,12 @@ This project predicts software defects based on various code metrics using a neu
 - **End-to-End MLOps Pipeline**: Data ingestion → Processing → Training → Serving → Monitoring
 - **Experiment Tracking**: MLflow for comprehensive experiment management
 - **Model Versioning**: DVC for data versioning and reproducibility
+- **Automated Workflows**: Makefile commands for all project operations
 - **Automated Workflows**: GitHub Actions CI/CD pipelines
 - **Quality Assurance**: Pre-commit hooks, testing, and code formatting
-- **Containerization**: Docker support for deployment
-- **Model Serving**: Multiple serving options (FastAPI, MLflow, Triton Inference Server)
-- **Hyperparameter Tuning**: Optuna integration for optimization
+- **Containerization**: Docker support (for Triton Inference Server deployment)
+- **Model Serving**: Multiple serving options (FastAPI, ONNX, TensorRT, Triton)
+- **Documentation**: Auto-generated API documentation with Sphinx
 
 ## 🏗️ Project Structure
 
@@ -47,8 +47,9 @@ software-defect-prediction/
 │   ├── download_data.py      # Kaggle data download
 │   ├── data_preprocessing.py # Data processing pipeline
 │   ├── exploratory_analysis.py # EDA and visualization
-│   └── check_installation.py # Environment verification
-├── src/                       # Source code
+│   └── run_mlflow.py        # Script for run MLflow
+│   └── convert_to_onnx.py   # Script for convert to ONNX format
+├── software_defect_predictor/  # Source code
 │   ├── data/                 # Data handling modules
 │   │   ├── dataset.py       # PyTorch Dataset
 │   │   └── datamodule.py    # PyTorch Lightning DataModule
@@ -66,7 +67,7 @@ software-defect-prediction/
 │       └── logging.py     # Logging configuration
 ├── tests/                  # Unit tests
 ├── docker/                # Docker configurations
-├── triton/                # Triton Inference Server configs
+├── triton_models/                # Triton Inference Server configs
 ├── .pre-commit-config.yaml # Pre-commit hooks
 ├── .dvcignore            # DVC ignore patterns
 ├── .gitignore           # Git ignore patterns
@@ -78,21 +79,21 @@ software-defect-prediction/
 
 ## 🛠️ Technology Stack
 
-| Category | Tools |
-|----------|-------|
-| **Language** | Python 3.9+ |
-| **ML Framework** | PyTorch, PyTorch Lightning |
-| **Configuration** | Hydra, OmegaConf |
-| **Experiment Tracking** | MLflow |
-| **Data Versioning** | DVC |
-| **Dependency Management** | Poetry |
-| **Code Quality** | Black, Flake8, isort, mypy |
-| **Testing** | pytest, pytest-cov |
-| **CI/CD** | GitHub Actions |
-| **Containerization** | Docker, Docker Compose |
-| **Model Serving** | FastAPI, MLflow, Triton |
-| **Hyperparameter Tuning** | Optuna |
-| **Monitoring** | Loguru, MLflow Tracking |
+| Category                  | Tools                                   |
+|---------------------------|-----------------------------------------|
+| **Language**              | Python 3.9+                             |
+| **ML Framework**          | PyTorch, PyTorch Lightning              |
+| **Configuration**         | Hydra, OmegaConf                        |
+| **Experiment Tracking**   | MLflow                                  |
+| **Data Versioning**       | DVC                                     |
+| **Dependency Management** | Poetry                                  |
+| **Code Quality**          | Black, Flake8, isort, mypy              |
+| **Testing**               | pytest                                  |
+| **Documentation**         | Sphinx                                  |
+| **CI/CD**                 | GitHub Actions                          |
+| **Containerization**      | Docker, Docker Compose                  |
+| **Model Serving**         | FastAPI, MLflow, ONNX, TensorRT, Triton |
+| **Monitoring**            | MLflow Tracking                         |
 
 ## ⚙️ Installation
 
@@ -101,14 +102,15 @@ software-defect-prediction/
 - Python 3.9 or higher
 - [Poetry](https://python-poetry.org/docs/#installation)
 - [Git](https://git-scm.com/)
+- [Kaggle CLI](https://github.com/Kaggle/kaggle-api) (for data download)
 - [DVC](https://dvc.org/doc/install) (optional, for data versioning)
-- [Docker](https://docs.docker.com/get-docker/) (optional, for containerization)
+- [Docker](https://docs.docker.com/get-docker/) (optional, for Triton)
 
 ### Quick Start
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/software-defect-prediction.git
+git clone https://github.com/E-Kater/Binary-Classification-with-Software-Defects-Dataset.git
 cd software-defect-prediction
 ```
 
@@ -124,7 +126,7 @@ make setup
 
 4. **Activate the virtual environment:**
 ```bash
-poetry shell
+poetry env activate
 ```
 
 ### Manual Installation
@@ -134,7 +136,7 @@ poetry shell
 curl -sSL https://install.python-poetry.org | python3 -
 
 # Clone and setup project
-git clone https://github.com/yourusername/software-defect-prediction.git
+git clone https://github.com/E-Kater/Binary-Classification-with-Software-Defects-Dataset.git
 cd software-defect-prediction
 
 # Install dependencies
@@ -186,10 +188,16 @@ make download
 
 # Option 2: Manual download
 # 1. Download from Kaggle: https://www.kaggle.com/competitions/playground-series-s3e23
-# 2. Place the CSV file in data/raw/defects.csv
+# 2. Place the CSV file in data/raw/
 ```
 
 ## 🚀 Usage
+
+#### Data Download Using Kaggle API
+make download
+
+# Or using DVC (if already versioned)
+make dvc-pull
 
 ### Complete Pipeline
 
@@ -205,6 +213,8 @@ This will:
 3. Train the model with experiment tracking
 4. Evaluate on test set
 5. Save the best model
+6. Convert model to ONNX format
+7. Run Fast API app
 
 ### Individual Steps
 
@@ -222,12 +232,12 @@ make explore
 ```bash
 make train
 # or with custom parameters
-python src/pipelines/train_pipeline.py model.learning_rate=0.0005 model.hidden_sizes="[128,64]"
+python software_defect_predictor/pipelines/train_pipeline.py model.learning_rate=0.0005 model.hidden_sizes="[128,64]"
 ```
 
 #### 4. Run Inference
 ```bash
-make predict
+make api
 ```
 
 #### 5. Launch MLflow UI
@@ -240,22 +250,7 @@ make mlflow
 
 #### Basic Training
 ```bash
-python src/pipelines/train_pipeline.py
-```
-
-#### Training with Class Weights (for imbalanced data)
-```bash
-python src/pipelines/train_pipeline.py data.use_class_weights=true
-```
-
-#### Hyperparameter Tuning
-```bash
-python scripts/hyperparameter_tuning.py
-```
-
-#### Training Improved Model
-```bash
-python src/pipelines/train_improved.py
+python software_defect_predictor/pipelines/train_pipeline.py
 ```
 
 ## 🔧 Configuration
@@ -271,7 +266,7 @@ The project uses Hydra for configuration management. Key configuration files:
 
 ```bash
 # Train with custom parameters
-python src/pipelines/train_pipeline.py \
+python software_defect_predictor/pipelines/train_pipeline.py \
     model.learning_rate=0.0005 \
     model.hidden_sizes="[128,64,32]" \
     model.dropout_rate=0.4 \
@@ -314,7 +309,8 @@ Output (defect/no defect)
 - **Early Stopping**: Prevents overfitting
 - **Learning Rate Scheduling**: Adaptive learning rate
 - **Gradient Clipping**: Improves training stability
-- **Comprehensive Metrics**: Accuracy, Precision, Recall, F1, ROC-AUC
+- **Comprehensive Metrics**: Accuracy, Precision, Recall, F1
+- **Multiple Model Formats**: PyTorch, ONNX, TensorRT support
 
 ## 🧪 Testing
 
@@ -326,9 +322,6 @@ make test
 
 # Run specific test file
 pytest tests/test_model.py -v
-
-# Run with coverage report
-pytest --cov=src tests/ --cov-report=html
 ```
 
 ## 🎯 Model Serving
@@ -343,8 +336,15 @@ make api
 ### Option 2: MLflow Serving
 ```bash
 # Serve a specific model version
-make mlflow-serve MODEL_URI=runs:/<run_id>/model
+make mlflow-ui
 # Available at http://localhost:8001
+
+### Tracked Information
+
+- Parameters: All Hydra configuration parameters
+- Metrics: Training/validation loss, F1, accuracy per epoch
+- Artifacts: Models, configs, plots, logs
+- Tags: Experiment metadata
 ```
 
 ### Option 3: Triton Inference Server (Production)
@@ -355,18 +355,18 @@ make triton-convert
 # Start Triton server
 make triton-start
 
-# Test Triton client
-make triton-test
+# Stop Triton client
+make triton-stop
 ```
 
 ### Inference Examples
 
 ```python
 # Python client example
-from src.inference.predictor import DefectPredictor
+from software_defect_prediction.inference.predictor import DefectPredictor
 
 predictor = DefectPredictor("models/best_model.ckpt")
-result = predictor.predict_single({
+result = predictor.predict({
     "loc": 22.0,
     "v(g)": 3.0,
     # ... other features
@@ -408,7 +408,7 @@ MLflow is integrated for comprehensive experiment tracking:
 
 ```bash
 # Start MLflow UI
-make mlflow
+make mlflow-ui
 
 # View experiments at http://localhost:5000
 ```
@@ -431,30 +431,6 @@ GitHub Actions workflows automate:
 4. **Model Training**: Scheduled retraining
 5. **Deployment**: Docker image building and pushing
 
-## 🐳 Docker Support
-
-### Build and Run
-
-```bash
-# Build Docker image
-docker build -t software-defect-prediction .
-
-# Run container
-docker run -p 8000:8000 software-defect-prediction
-
-# Docker Compose (with MLflow)
-docker-compose up
-```
-
-### Development with Docker
-
-```bash
-# Development environment
-docker-compose -f docker/development.yml up
-
-# Production deployment
-docker-compose -f docker/production.yml up
-```
 
 ## 📁 Data Versioning with DVC
 
@@ -462,7 +438,7 @@ Track datasets and models with DVC:
 
 ```bash
 # Track data files
-dvc add data/raw/defects.csv
+dvc add data/raw/train.csv
 
 # Track processed data
 dvc add data/processed/train.csv data/processed/test.csv
@@ -488,8 +464,8 @@ make setup
 make lint
 
 # Auto-fix issues
-black src/ tests/ scripts/
-isort src/ tests/ scripts/
+black software_defect_predictor/ tests/ scripts/
+isort software_defect_predictor/ tests/ scripts/
 ```
 
 ### Code Formatting Standards
@@ -519,111 +495,39 @@ Key metrics tracked:
 - **Precision**: Quality of positive predictions
 - **Recall**: Coverage of actual positives
 - **F1-Score**: Balance of precision and recall
-- **ROC-AUC**: Model discrimination ability
-- **Inference Latency**: Prediction speed
 
 ## 🔍 Debugging
 
 ### Common Issues
 
-1. **Missing Data**: Ensure data is in `data/raw/defects.csv`
+1. **Missing Data**: Ensure data is in `data/raw/train.csv`
 2. **CUDA Errors**: Set `accelerator: cpu` in config for CPU-only machines
 3. **Import Errors**: Run `poetry install` to ensure all dependencies
 4. **Memory Issues**: Reduce `batch_size` in config
+5. **Missing DVC remote**: Configure in .dvc/config
+6. **Kaggle API error**: Set up ~/.kaggle/kaggle.json
+7. **CUDA issues**: Set accelerator: cpu in config
 
 ### Debug Commands
 
 ```bash
 # Check installation
-make check
+make check_inference
 
-# Test individual components
-python scripts/check_model.py
-python scripts/check_data.py
-
-# Verbose logging
-python src/pipelines/train_pipeline.py --verbose
 ```
 
 ## 📚 Documentation
 
-### Generated Documentation
+### Generated Documentation Using Sphinx
 
 ```bash
-# Generate API documentation
-pdoc --html src --output-dir docs/
-
 # Generate project documentation
-mkdocs build
+make  docs-gen
 ```
 
 ### Code Documentation
 
 - Docstrings follow Google style
 - Type hints throughout codebase
+- Comments clarified some possible misunderstandings
 - README files in each module
-
-## 🤝 Contributing
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit changes**: `git commit -m 'Add amazing feature'`
-4. **Push to branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
-
-### Development Guidelines
-
-- Write tests for new features
-- Update documentation
-- Follow code style guidelines
-- Add type hints
-- Update dependencies in `pyproject.toml`
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Kaggle for the dataset
-- PyTorch and PyTorch Lightning teams
-- MLflow for experiment tracking
-- Hydra for configuration management
-- All open-source contributors
-
-## 📞 Support
-
-For questions and support:
-
-1. **Issues**: [GitHub Issues](https://github.com/yourusername/software-defect-prediction/issues)
-2. **Discussions**: [GitHub Discussions](https://github.com/yourusername/software-defect-prediction/discussions)
-3. **Email**: your.email@example.com
-
-## 📊 Project Status
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Data Pipeline | ✅ Complete | Kaggle integration working |
-| Model Training | ✅ Complete | PyTorch Lightning implemented |
-| Experiment Tracking | ✅ Complete | MLflow fully integrated |
-| Model Serving | ✅ Complete | Multiple serving options |
-| CI/CD | ✅ Complete | GitHub Actions workflows |
-| Documentation | ✅ Complete | Comprehensive README |
-| Testing | ✅ Complete | 90%+ coverage |
-| Deployment | 🟡 In Progress | Docker images ready |
-| Monitoring | 🟡 In Progress | Basic monitoring implemented |
-
-## 🔮 Future Enhancements
-
-- [ ] Real-time prediction API
-- [ ] Model monitoring dashboard
-- [ ] A/B testing framework
-- [ ] Automated retraining pipeline
-- [ ] Feature store integration
-- [ ] Multi-model ensemble
-- [ ] Explainable AI (SHAP/LIME)
-- [ ] Automated data drift detection
-
----
-
-**⭐ If you find this project useful, please give it a star! ⭐**

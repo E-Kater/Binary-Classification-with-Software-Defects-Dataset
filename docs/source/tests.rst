@@ -4,6 +4,22 @@ tests package
 Submodules
 ----------
 
+tests.conftest module
+---------------------
+
+.. automodule:: tests.conftest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tests.test\_imports module
+--------------------------
+
+.. automodule:: tests.test_imports
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tests.test\_inference module
 ----------------------------
 
@@ -12,10 +28,10 @@ tests.test\_inference module
    :undoc-members:
    :show-inheritance:
 
-tests.test\_model module
-------------------------
+tests.test\_predictor module
+----------------------------
 
-.. automodule:: tests.test_model
+.. automodule:: tests.test_predictor
    :members:
    :undoc-members:
    :show-inheritance:

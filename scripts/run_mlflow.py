@@ -11,9 +11,6 @@ def start_mlflow_ui(backend_store_uri: str, port: int = 5000, host: str = "127.0
 
     cmd = ["mlflow", "ui"]
 
-    if backend_store_uri:
-        cmd.extend(["--backend-store-uri", backend_store_uri])
-
     cmd.extend(["--host", host, "--port", str(port)])
 
     print(f"Запуск MLflow UI: {' '.join(cmd)}")
@@ -36,7 +33,7 @@ def main():
     parser.add_argument(
         "--host",
         default="127.0.0.1",
-        help="Хост для MLflow UI (по умолчанию: 127.0.0.1)",  # noqa501
+        help="Хост для MLflow UI (по умолчанию: 127.0.0.1)",
     )
     parser.add_argument(
         "--backend",

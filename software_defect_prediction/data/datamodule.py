@@ -115,6 +115,8 @@ class DefectDataModule(pl.LightningDataModule):
             batch_size=self.config.model.batch_size,
             shuffle=True,
             num_workers=4,
+            drop_last=True,
+            persistent_workers=True,
         )
 
     def val_dataloader(self):

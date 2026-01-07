@@ -1,7 +1,10 @@
+from typing import List
+
 import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+from omegaconf import DictConfig
 from sklearn.utils.class_weight import compute_class_weight
 from utils.logging import get_logger
 
@@ -13,9 +16,9 @@ logger = get_logger(__name__)
 class DefectClassifier(pl.LightningModule):
     """Модель для классификации дефектов ПО"""
 
-    def __init__(self, config):
+    def __init__(self, config: DictConfig):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=[])
 
         self.config = config
         model_config = config.model
@@ -23,26 +26,42 @@ class DefectClassifier(pl.LightningModule):
         # Создание слоев
         layers = []
         input_size = model_config.input_size
-
+        use_batchnorm = getattr(model_config, "use_batchnorm", True)
         for hidden_size in model_config.hidden_sizes:
             layers.append(nn.Linear(input_size, hidden_size))
+            if use_batchnorm:
+                layers.append(nn.BatchNorm1d(hidden_size))
             layers.append(nn.ReLU())
             layers.append(nn.Dropout(model_config.dropout_rate))
+            if not use_batchnorm:
+                layers.append(nn.LayerNorm(hidden_size))
             input_size = hidden_size
 
         layers.append(nn.Linear(input_size, model_config.num_classes))
 
         self.network = nn.Sequential(*layers)
+        self._init_weights()
 
         self.loss_fn = None
         self.class_weights = None
         # Для метрик
-        self.train_preds = []
-        self.train_targets = []
-        self.val_preds = []
-        self.val_targets = []
-        self.test_preds = []
-        self.test_targets = []
+        self.train_preds: List[float] = []
+        self.train_targets: List[float] = []
+        self.val_preds: List[float] = []
+        self.val_targets: List[float] = []
+        self.test_preds: List[float] = []
+        self.test_targets: List[float] = []
+
+    def _init_weights(self):
+        """Инициализация весов для лучшей сходимости"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         return self.network(x)
@@ -89,8 +108,37 @@ class DefectClassifier(pl.LightningModule):
         # Преобразуем в тензор
         self.class_weights = torch.tensor(class_weights, dtype=torch.float32)
 
-        # Создаем функцию потерь
-        self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights.to(self.device))
+        smoothing = getattr(self.config.model, "label_smoothing", 0.1)
+        if getattr(self.config.model, "use_focal_loss", True):
+            from torch.nn import functional as F
+
+            # Focal Loss параметры
+            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+            alpha = (
+                class_weights_tensor.to(self.device)
+                if class_weights is not None
+                else None
+            )
+            gamma = getattr(self.config.model, "focal_gamma", 2.0)
+
+            def focal_loss(logits, targets):
+                ce_loss = F.cross_entropy(logits, targets, reduction="none")
+                pt = torch.exp(-ce_loss)
+                focal_loss = (
+                    (alpha[targets] if alpha is not None else 1.0)
+                    * (1 - pt) ** gamma
+                    * ce_loss
+                )
+                return focal_loss.mean()
+
+            self.loss_fn = focal_loss
+        else:
+            self.loss_fn = nn.CrossEntropyLoss(
+                weight=class_weights.to(self.device)
+                if class_weights is not None
+                else None,
+                label_smoothing=smoothing,
+            )
 
         # Логируем результат
         logger.info(f"Веса классов: {self.class_weights.tolist()}")
@@ -172,16 +220,19 @@ class DefectClassifier(pl.LightningModule):
             logger.info(f"Test metrics: {metrics}")
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.config.model.learning_rate
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.config.model.learning_rate,
+            weight_decay=self.config.training.optimizer.weight_decay,
+            betas=(0.9, 0.999),
+            eps=1e-8,
         )
 
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer,
-            mode="max",
-            patience=5,
-            factor=0.5,
-            # verbose=True
+            T_0=10,  # Первый период
+            T_mult=2,  # Умножение периода
+            eta_min=1e-6,  # Минимальный lr
         )
 
         return {
@@ -228,5 +279,7 @@ class DefectClassifier(pl.LightningModule):
 
             # Создаем модель и загружаем веса
             model = cls(config)
+            state_dict = checkpoint["state_dict"]
+            state_dict.pop("loss_fn.weight")
             model.load_state_dict(checkpoint["state_dict"])
             return model

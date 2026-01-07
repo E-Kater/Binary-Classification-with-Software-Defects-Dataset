@@ -160,7 +160,6 @@ def main():
         ("hydra", "hydra"),
         ("mlflow", "mlflow"),
         ("pandas", "pandas"),
-        ("scikit-learn", "sklearn"),
         ("loguru", "loguru"),
         ("pre-commit", "pre_commit"),
     ]

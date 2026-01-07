@@ -1,14 +1,11 @@
 import json
 import logging
-import warnings
 from pathlib import Path
 
 import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-
-warnings.filterwarnings("ignore")
 
 # Настройка логирования
 logging.basicConfig(
@@ -22,7 +19,7 @@ def load_data(data_dir: Path):
     logger.info("Загрузка данных...")
 
     # Ищем CSV файлы
-    csv_files = list(data_dir.glob("*.csv"))
+    csv_files = list(data_dir.glob("train.csv"))
 
     if not csv_files:
         raise FileNotFoundError(f"CSV файлы не найдены в {data_dir}")
@@ -238,7 +235,7 @@ def main():
         save_raw_data(df, PROCESSED_DATA_DIR)
 
         # Исследуем данные
-        # missing_info = explore_data(df)
+        explore_data(df)
 
         # Подготавливаем признаки
         X, y, ids = prepare_features(df)

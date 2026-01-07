@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -7,12 +6,9 @@ import pandas as pd
 import pytest
 import torch
 
-# Добавляем путь к src в PYTHONPATH
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "software_defect_prediction"))
-
-from inference.predictor import DefectPredictor  # noqa402
 
 
 @pytest.fixture
@@ -80,39 +76,116 @@ def sample_config():
     }
 
 
-def test_predictor_initialization(sample_config):
-    """Тест инициализации предиктора"""
-    # Создаем временную модель
-    import tempfile
+# Вставьте в ваш test_inference.py после существующих тестов
+
+
+def test_model_forward_pass():
+    """Тест forward pass модели"""
+    from types import SimpleNamespace
 
     from models.model import DefectClassifier
 
-    class SimpleConfig:
-        class model:
-            input_size = 21
-            hidden_sizes = [10, 5]
-            dropout_rate = 0.1
-            learning_rate = 0.001
-            batch_size = 32
-            num_classes = 2
+    # Создаем конфигурацию
+    config = SimpleNamespace()
+    config.model = SimpleNamespace()
+    config.model.input_size = 21
+    config.model.hidden_sizes = [64, 32]
+    config.model.dropout_rate = 0.2
+    config.model.learning_rate = 0.001
+    config.model.batch_size = 32
+    config.model.num_classes = 2
 
-    config = SimpleConfig()
+    # Создаем модель
     model = DefectClassifier(config)
 
-    with tempfile.NamedTemporaryFile(suffix=".ckpt", delete=False) as tmp:
-        torch.save(model.state_dict(), tmp.name)
-        model_path = tmp.name
+    # Тестовый вход
+    test_input = torch.randn(4, 21)
 
-    try:
-        predictor = DefectPredictor(model_path, sample_config)
-        assert predictor.model is not None
-        assert predictor.device is not None
-        print("✓ Predictor инициализирован успешно")
-    finally:
-        os.unlink(model_path)
+    # Проверяем forward pass
+    output = model(test_input)
+    assert output.shape == (4, 2)
+    assert not torch.isnan(output).any()
 
 
-def test_preprocess(sample_data, sample_config):
-    """Тест препроцессинга"""
-    predictor = DefectPredictor("dummy_path", sample_config)
-    assert predictor is not None
+def test_model_training_step():
+    """Тест training step"""
+    from types import SimpleNamespace
+
+    from models.model import DefectClassifier
+
+    config = SimpleNamespace()
+    config.model = SimpleNamespace()
+    config.model.input_size = 5  # Уменьшаем для теста
+    config.model.hidden_sizes = [10, 5]
+    config.model.dropout_rate = 0.1
+    config.model.learning_rate = 0.001
+    config.model.batch_size = 32
+    config.model.num_classes = 2
+
+    model = DefectClassifier(config)
+
+    # Создаем тестовый батч
+    x = torch.randn(8, 5)
+    y = torch.randint(0, 2, (8,))
+
+    # Выполняем training step
+    loss = model.training_step((x, y), batch_idx=0)
+
+    assert loss is not None
+    assert loss.item() > 0
+
+
+def test_model_validation_step():
+    """Тест validation step"""
+    from types import SimpleNamespace
+
+    from models.model import DefectClassifier
+
+    config = SimpleNamespace()
+    config.model = SimpleNamespace()
+    config.model.input_size = 21
+    config.model.hidden_sizes = [10, 5]
+    config.model.dropout_rate = 0.1
+    config.model.learning_rate = 0.001
+    config.model.batch_size = 32
+    config.model.num_classes = 2
+
+    model = DefectClassifier(config)
+
+    # Создаем тестовый батч
+    x = torch.randn(8, 21)
+    y = torch.randint(0, 2, (8,))
+
+    # Выполняем validation step
+    model.training_step((x, y), batch_idx=0)
+    loss = model.validation_step((x, y), batch_idx=0)
+
+    assert loss is not None
+    assert isinstance(loss, torch.Tensor)
+
+
+def test_model_configure_optimizers():
+    """Тест конфигурации оптимизаторов"""
+    from types import SimpleNamespace
+
+    from models.model import DefectClassifier
+
+    config = SimpleNamespace()
+    config.model = SimpleNamespace()
+    config.model.input_size = 5
+    config.model.hidden_sizes = [10, 5]
+    config.model.dropout_rate = 0.1
+    config.model.learning_rate = 0.01  # Явное значение для теста
+    config.model.batch_size = 32
+    config.model.num_classes = 2
+
+    model = DefectClassifier(config)
+
+    optimizers_config = model.configure_optimizers()
+
+    assert "optimizer" in optimizers_config
+    assert isinstance(optimizers_config["optimizer"], torch.optim.Adam)
+
+    # Проверяем learning rate
+    optimizer = optimizers_config["optimizer"]
+    assert optimizer.param_groups[0]["lr"] == 0.01

@@ -15,10 +15,13 @@ stages:
     deps:
       - data/processed/train.csv
       - data/processed/test.csv
-    params:
-      - configs/config.yaml
     outs:
-      - models/best_model-v6.ckpt
-    metrics:
-      - metrics.json:
-          cache: false
+      - models/best_model.ckpt
+
+  convert_to_onnx:
+    cmd: python scripts/convert_to_onnx.py --checkpoint models/best_model.ckpt --output models/onnx/model.onnx
+    deps:
+      - models/best_model.ckpt
+      - scripts/convert_to_onnx.py
+    outs:
+      - models/onnx/model.onnx

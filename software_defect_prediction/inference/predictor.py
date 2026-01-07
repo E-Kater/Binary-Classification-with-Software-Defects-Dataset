@@ -8,16 +8,16 @@ import pandas as pd
 import torch
 import torch.serialization
 from omegaconf.dictconfig import DictConfig
-from utils.logging import get_logger
 
 torch.serialization.add_safe_globals([DictConfig])
 
-# Добавляем путь для импорта модулей
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir))
+project_root = os.path.dirname(current_dir)
 sys.path.append(project_root)
 
-from models.model import DefectClassifier  # noqa: E402
+from models.model import DefectClassifier
+from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
