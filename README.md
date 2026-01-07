@@ -204,9 +204,14 @@ make dvc-pull
 Run the entire MLOps pipeline:
 
 ```bash
-make full-pipeline
-```
 
+make pipeline-data
+make pipeline-train
+make pipeline-deploy
+make pipeline-full
+
+
+```
 This will:
 1. Download data from Kaggle
 2. Preprocess and split the data
@@ -242,7 +247,7 @@ make api
 
 #### 5. Launch MLflow UI
 ```bash
-make mlflow
+make mlflow-ui
 # Open http://localhost:5000 in your browser
 ```
 
@@ -250,7 +255,7 @@ make mlflow
 
 #### Basic Training
 ```bash
-python software_defect_predictor/pipelines/train_pipeline.py
+python software_defect_prediction/pipelines/train_pipeline.py
 ```
 
 ## 🔧 Configuration
@@ -266,7 +271,7 @@ The project uses Hydra for configuration management. Key configuration files:
 
 ```bash
 # Train with custom parameters
-python software_defect_predictor/pipelines/train_pipeline.py \
+python software_defect_prediction/pipelines/train_pipeline.py \
     model.learning_rate=0.0005 \
     model.hidden_sizes="[128,64,32]" \
     model.dropout_rate=0.4 \
@@ -482,10 +487,10 @@ isort software_defect_predictor/ tests/ scripts/
 
 ```bash
 # Monitor training logs
-make monitor
+make logs
 
 # View MLflow metrics in real-time
-make mlflow
+make mlflow-ui
 ```
 
 ### Model Performance

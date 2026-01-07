@@ -1,4 +1,4 @@
-.PHONY: help install setup test train preprocess clean lint download explore check mlflow-ui mlflow-list docs-init docs-gen  docs-view docs-clean  triton-convert convert-onnx triton-start triton-stop pipeline-full pipeline-data pipeline-train pipeline-deploy
+.PHONY: help install setup test train preprocess clean lint download explore check mlflow-ui mlflow-list docs-init docs-gen  docs-view docs-clean  triton-convert convert-onnx triton-start triton-stop pipeline-full pipeline-data pipeline-train pipeline-deploy logs
 help:
 	@echo "Доступные команды:"
 	@echo "  install         Установка зависимостей"
@@ -15,6 +15,7 @@ help:
 	@echo "  api            - Запуск FastAPI сервера"
 	@echo "  serve          - Алиас для api"
 	@echo "  check-inference - Проверка готовности инференса"
+	@echo "  logs            Просмотр логов (logs/app.log)"
 	@echo ""
 	@echo "ПАЙПЛАЙНЫ:"
 	@echo "  pipeline-full   Полный пайплайн (данные → обучение → деплой)"
@@ -257,3 +258,11 @@ pipeline-deploy:
 	@echo "=" * 60
 	@echo "Сервер запущен на http://localhost:8000"
 	@echo "Документация API: http://localhost:8000/docs"
+logs:
+	@echo "Просмотр логов из папки logs/app.log"
+	@if [ -f "logs/app.log" ]; then \
+		tail -f logs/app.log; \
+	else \
+		echo "Файл логов не найден: logs/app.log"; \
+		echo "Создайте директорию logs или убедитесь в наличии файла"; \
+	fi
