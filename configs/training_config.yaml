@@ -5,6 +5,8 @@ training:
   mode: "max"
   accelerator: "cpu"
   devices: 1
+  optimizer:
+    weight_decay: 0.001
 
 mlflow:
   tracking_uri: "mlruns"

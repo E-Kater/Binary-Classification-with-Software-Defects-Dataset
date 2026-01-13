@@ -1,6 +1,6 @@
 model:
   name: DefectClassifier
-  model_path: /Users/ekaterina/PycharmProjects/Binary-Classification-with-Software-Defects-Dataset/models/best_model-v26.ckpt
+  model_path: /Users/ekaterina/PycharmProjects/Binary-Classification-with-Software-Defects-Dataset/models/best_model-v27.ckpt
   scaler_path: data/processed/scaler.joblib
   input_size: 21
   hidden_sizes:
